@@ -3,8 +3,13 @@ const router = express.Router();
 const isBase64 = require('is-base64');
 const base64Img = require('base64-img');
 
-const { Media } = require('../models');
+const {
+  Media
+} = require('../models');
 const fs = require('fs')
+const {
+  HOSTNAME
+} = process.env;
 
 // getall
 router.get('/', async (req, res) => {
@@ -13,7 +18,7 @@ router.get('/', async (req, res) => {
   });
 
   const mappedMedia = media.map((m) => {
-    m.image = `${req.get('host')}/${m.image}`;
+    m.image = `${HOSTNAME}/${m.image}`;
     return m;
   })
 
@@ -25,29 +30,39 @@ router.get('/', async (req, res) => {
 
 // post
 router.post('/', (req, res) => {
-   const image = req.body.image;
+  const image = req.body.image;
 
-   if(!isBase64(image, { mimeRequired:true })) {
-     return res.status(400).json({ status: 'error', message: 'invalid base64' })
-   } else {
-     base64Img.img(image, './public/images', Date.now(), async (err, filepath) => {
-       if(err) {
-         return res.status(400).json({ status: 'error', message: err.message });
-       } else {
-         const filename = filepath.split('\\').pop().split('/').pop();
+  if (!isBase64(image, {
+      mimeRequired: true
+    })) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'invalid base64'
+    })
+  } else {
+    base64Img.img(image, './public/images', Date.now(), async (err, filepath) => {
+      if (err) {
+        return res.status(400).json({
+          status: 'error',
+          message: err.message
+        });
+      } else {
+        const filename = filepath.split('\\').pop().split('/').pop();
         //  return res.send(Media);
-         const media = await Media.create({ image: `images/${filename}`});
-         return res.json({
-           status: 'success',
-           data: {
-             id: media.id,
-             image: `${req.get('host')}/images/${filename}`,
-             updated_at : media.updatedAt
-           }
-         })
-       }
-     })
-   }
+        const media = await Media.create({
+          image: `images/${filename}`
+        });
+        return res.json({
+          status: 'success',
+          data: {
+            id: media.id,
+            image: `${HOSTNAME}/images/${filename}`,
+            updated_at: media.updatedAt
+          }
+        })
+      }
+    })
+  }
 })
 
 // delete
@@ -56,18 +71,27 @@ router.delete('/:id', async (req, res) => {
 
   const media = await Media.findByPk(id);
 
-  if(!media) { 
-    return res.status(404).json({ status: 'error', message: 'media not found' }) 
+  if (!media) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'media not found'
+    })
   }
 
   fs.unlink(`./public/${media.image}`, async (err) => {
-    if(err) {
-      return res.status(400).json({ status: 'error', message: err.message })
+    if (err) {
+      return res.status(400).json({
+        status: 'error',
+        message: err.message
+      })
     }
 
     await media.destroy();
 
-    return res.json({ status: 'success', messaga: 'image delete'})
+    return res.json({
+      status: 'success',
+      messaga: 'image delete'
+    })
 
   })
 
