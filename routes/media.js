@@ -6,7 +6,8 @@ const base64Img = require('base64-img');
 const {
   Media
 } = require('../models');
-const fs = require('fs')
+const fs = require('fs');
+
 const {
   HOSTNAME
 } = process.env;
@@ -65,7 +66,7 @@ router.post('/', (req, res) => {
   }
 })
 
-// delete
+// delete 1
 router.delete('/:id', async (req, res) => {
   const id = req.params.id
 
@@ -95,6 +96,40 @@ router.delete('/:id', async (req, res) => {
 
   })
 
+
+});
+
+// delete 2
+router.post('/deleted', async (req, res) => {
+  var _image = req.body.image.split('\\').pop().split('/').pop()
+  var __image = `images/${_image}`
+
+  const media = await Media.findAll({ where: { image: __image } });
+  if (media.length < 1 ) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'media not found'
+    })
+  }
+  
+  fs.unlink(`./public/${media[0].image}`, async (err) => {
+    if (err) {
+      return res.status(400).json({
+        status: 'error',
+        message: err.message
+      })
+    }
+
+    const mediaById = await Media.findByPk(media[0].id);
+    
+    await mediaById.destroy();
+
+    return res.json({
+      status: 'success',
+      messaga: 'image delete'
+    })
+
+  })
 
 });
 
